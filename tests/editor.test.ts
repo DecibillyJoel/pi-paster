@@ -1,7 +1,16 @@
-import { describe, expect, test } from "vite-plus/test";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { pathToFileURL } from "node:url";
+import { afterEach, beforeEach, describe, expect, test } from "vite-plus/test";
 import type { KeybindingsManager } from "@earendil-works/pi-coding-agent";
 import type { EditorTheme, TUI } from "@earendil-works/pi-tui";
-import { PasterEditor, segmentTextWithAtomicImages } from "../src/editor.ts";
+import {
+  PASTE_END,
+  PASTE_START,
+  PasterEditor,
+  segmentTextWithAtomicImages,
+} from "../src/editor.ts";
 import { AttachmentStore } from "../src/store.ts";
 
 const IMAGE = {
@@ -10,9 +19,17 @@ const IMAGE = {
   data: "",
 };
 
+const PNG_BYTES = Buffer.from([
+  0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d, 0x49, 0x48, 0x44, 0x52,
+  0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x08, 0x06, 0x00, 0x00, 0x00, 0x1f, 0x15, 0xc4,
+  0x89, 0x00, 0x00, 0x00, 0x0d, 0x49, 0x44, 0x41, 0x54, 0x78, 0x9c, 0x63, 0x00, 0x01, 0x00, 0x00,
+  0x05, 0x00, 0x01, 0x0d, 0x0a, 0x2d, 0xb4, 0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4e, 0x44, 0xae,
+  0x42, 0x60, 0x82,
+]);
+
 const PASTE_KEY = "\u0016";
 
-function createEditor(pasteClipboardImage: () => unknown) {
+function createEditor(pasteClipboardImage: () => unknown, cwd = "/tmp") {
   const tui = { requestRender() {} } as unknown as TUI;
   const theme = { fallbackColor: (text: string) => text } as unknown as EditorTheme;
   const keybindings = {
@@ -20,7 +37,7 @@ function createEditor(pasteClipboardImage: () => unknown) {
       action === "app.clipboard.pasteImage" && data === PASTE_KEY,
   } as unknown as KeybindingsManager;
   const editor = new PasterEditor(tui, theme, keybindings, {
-    cwd: "/tmp",
+    cwd,
     store: new AttachmentStore(),
     notify() {},
     deletePlaceholderAsBlock: true,
@@ -111,5 +128,44 @@ describe("PasterEditor paste key", () => {
 
     expect(appPasteCalls).toBe(0);
     expect(editor.getText()).toBe("[#image 1]");
+  });
+});
+
+describe("PasterEditor terminal paste", () => {
+  let dir: string;
+  let imagePath: string;
+
+  beforeEach(() => {
+    dir = mkdtempSync(join(tmpdir(), "paster-bracketed-"));
+    imagePath = join(dir, "shot.png");
+    writeFileSync(imagePath, PNG_BYTES);
+  });
+
+  afterEach(() => {
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  test("turns a pasted image path into an attachment", () => {
+    const editor = createEditor(() => undefined, dir);
+
+    editor.handleInput(`${PASTE_START}${imagePath}${PASTE_END}`);
+
+    expect(editor.getText()).toBe("[#image 1]");
+  });
+
+  test("turns a pasted local file URI into an attachment", () => {
+    const editor = createEditor(() => undefined, dir);
+
+    editor.handleInput(`${PASTE_START}${pathToFileURL(imagePath).href}${PASTE_END}`);
+
+    expect(editor.getText()).toBe("[#image 1]");
+  });
+
+  test("keeps pasted text that names no image", () => {
+    const editor = createEditor(() => undefined, dir);
+
+    editor.handleInput(`${PASTE_START}hello world${PASTE_END}`);
+
+    expect(editor.getText()).toBe("hello world");
   });
 });
