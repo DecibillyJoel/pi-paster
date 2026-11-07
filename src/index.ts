@@ -2,6 +2,7 @@ import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { readClipboardImage } from "./clipboard.ts";
 import { registerImageCompressionCommand } from "./compress.ts";
 import { type PasterConfig, resolvePasterConfig } from "./config.ts";
+import { repairMissingImages } from "./context-repair.ts";
 import { PasterEditor } from "./editor.ts";
 import { appendImagePathContext, imagesForTextOptimized } from "./image-utils.ts";
 import {
@@ -187,6 +188,15 @@ export default function paster(pi: ExtensionAPI, config: PasterConfig = {}): voi
       text,
       images,
     };
+  });
+
+  // A queued (mid-turn) submission can reach the transcript without its image
+  // part, and the transcript is not rewritten. Put the image back into the
+  // request that carries its text, for every later request too.
+  pi.on("context", async (event) => {
+    const repaired = await repairMissingImages(store, event.messages);
+    if (!repaired) return;
+    return { messages: repaired };
   });
 
   pi.on("before_agent_start", () => {
