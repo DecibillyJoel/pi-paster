@@ -26,7 +26,7 @@ Terminal image workflows are awkward: dragging a screenshot into a terminal usua
 
 - Converts pasted or drag-dropped image paths into placeholders.
 - Supports PNG, JPEG, WebP, and GIF by magic-byte detection.
-- Supports absolute, relative, home-relative, quoted, and shell-escaped paths.
+- Supports absolute, relative, home-relative, quoted, shell-escaped, and local `file://` URI paths.
 - Attaches only placeholders still present in the submitted prompt.
 - Preserves attachment order by first placeholder occurrence.
 - Shows submitted image previews in chat history.

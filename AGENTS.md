@@ -22,7 +22,7 @@ Docs are local at `node_modules/vite-plus/docs` or online at https://viteplus.de
 
 Target behavior:
 
-1. User pastes or drag-drops an image path, or uses pi's image clipboard paste keybinding.
+1. User pastes or drag-drops an image path or a local `file://` URI, or uses pi's image clipboard paste keybinding.
 2. The editor replaces the raw path/image with a placeholder like `[#image 1]`.
 3. The extension stores the image payload immediately in memory.
 4. On submit, the user text is sent with placeholders preserved and matching image blocks attached to the same user turn.
