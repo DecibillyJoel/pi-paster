@@ -94,6 +94,20 @@ describe("paster context hook", () => {
     ]);
   });
 
+  test("restores the image for the array shape that a queued turn drops", async () => {
+    const event = {
+      type: "context",
+      messages: [{ role: "user", content: [{ type: "text", text: "[#image 1]" }] }],
+    };
+
+    const result = (await contextHandler(pi)(event, ctx)) as ContextResult;
+
+    expect(result?.messages?.[0]?.content).toEqual([
+      { type: "text", text: "[#image 1]" },
+      { type: "image", mimeType: "image/png", data: expect.any(String) },
+    ]);
+  });
+
   test("returns nothing when the message already holds its image", async () => {
     const withImage = {
       role: "user",

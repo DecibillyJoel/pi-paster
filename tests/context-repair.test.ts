@@ -29,6 +29,19 @@ describe("repairMissingImages", () => {
     expect(repaired?.[0]?.role).toBe("user");
   });
 
+  test("appends the lost image to an array-shaped user message", async () => {
+    const messages = [
+      { role: "user", content: [{ type: "text", text: "queued submission [#image 1]" }] },
+    ];
+
+    const repaired = await repairMissingImages(seededStore(), messages);
+
+    expect(repaired?.[0]?.content).toEqual([
+      { type: "text", text: "queued submission [#image 1]" },
+      { type: "image", mimeType: "image/png", data: "aaa" },
+    ]);
+  });
+
   test("keeps a message that already holds an image part", async () => {
     const messages = [
       {
