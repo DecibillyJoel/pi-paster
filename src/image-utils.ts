@@ -115,16 +115,41 @@ export function windowsToWslPath(windowsPath: string): string {
   return windowsPath;
 }
 
-export function resolveImagePath(input: string, cwd: string): string {
-  if (input === "~") return homedir();
-  if (input.startsWith("~/")) return resolve(homedir(), input.slice(2));
-  if (isWindowsLikePath(input)) {
-    if (platform === "win32") return input;
-    if (isWsl()) return windowsToWslPath(input);
-    return input;
+const FILE_URI_DRIVE_PATH = /^\/([a-zA-Z]:[\\/].*)$/;
+
+export function fileUriToPath(value: string): string | undefined {
+  if (!value.startsWith("file:/")) return undefined;
+  let url: URL;
+  try {
+    url = new URL(value);
+  } catch {
+    return undefined;
   }
-  if (isAbsolute(input)) return input;
-  return resolve(cwd, input);
+  const localHost = url.host === "" || url.host === "localhost";
+  if (url.protocol !== "file:" || !localHost) return undefined;
+  if (url.pathname === "/" || url.pathname === "") return undefined;
+  let path: string;
+  try {
+    path = decodeURIComponent(url.pathname);
+  } catch {
+    return undefined;
+  }
+  const driveMatch = FILE_URI_DRIVE_PATH.exec(path);
+  if (driveMatch) return driveMatch[1]!;
+  return path;
+}
+
+export function resolveImagePath(input: string, cwd: string): string {
+  const value = fileUriToPath(input) ?? input;
+  if (value === "~") return homedir();
+  if (value.startsWith("~/")) return resolve(homedir(), value.slice(2));
+  if (isWindowsLikePath(value)) {
+    if (platform === "win32") return value;
+    if (isWsl()) return windowsToWslPath(value);
+    return value;
+  }
+  if (isAbsolute(value)) return value;
+  return resolve(cwd, value);
 }
 
 export function shellUnescape(input: string): string {
@@ -142,6 +167,7 @@ export function shellUnescape(input: string): string {
 
 function isPathLike(value: string): boolean {
   return (
+    fileUriToPath(value) !== undefined ||
     value.startsWith("/") ||
     value.startsWith("~/") ||
     value === "~" ||
