@@ -21,6 +21,7 @@ export * from "./clipboard.ts";
 export * from "./compress.ts";
 export * from "./optimize-image.ts";
 export * from "./config.ts";
+export * from "./context-repair.ts";
 export * from "./editor.ts";
 export * from "./image-utils.ts";
 export * from "./preview.ts";

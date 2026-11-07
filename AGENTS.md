@@ -50,6 +50,7 @@ Target behavior:
 - `src/preview.ts` — submitted-image and cursor-preview render components.
 - `src/store.ts` — in-memory attachment store and placeholder allocation.
 - `src/clipboard.ts` — clipboard image reader for macOS, Windows (WSL), and Linux.
+- `src/context-repair.ts` — restores a lost image part into the outgoing request.
 - `src/terminal-input.ts` — fallback terminal input handler used when the custom editor is disabled.
 - `tests/` — Vitest tests run through Vite+.
 - `package.json` — package metadata, npm publishing metadata, peer dependencies, and `pi.extensions` manifest.
