@@ -104,6 +104,8 @@ On macOS, pi exposes an image paste action through its keybinding system. In the
 
 On Linux, the same `Ctrl+V` keybinding reads the image from the desktop clipboard. The reader uses `wl-paste` from `wl-clipboard` (Wayland) or `xclip` (X11). Install at least one of the two tools. The reader tries `wl-paste` first, then `xclip`, and it prefers a PNG, JPEG, WebP, or GIF target. If neither tool is installed, paster reports that the clipboard image could not be attached. Under WSL, paster uses the Windows clipboard instead.
 
+`Ctrl+Shift+V` and the Paste item in the terminal menu are handled by the terminal emulator as well. They send text only, so paste an image path or a local `file://` URI with them. To paste a screenshot that way, set the screenshot tool to copy the file location instead of the image.
+
 ## Configuration
 
 By default all editor integrations are enabled, and submitted image previews render in the raw chat-history style.
