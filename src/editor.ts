@@ -133,9 +133,10 @@ export class PasterEditor extends CustomEditor {
   ) {
     super(tui, theme, pasterKeybindings);
     this.installAtomicImageSegmentation();
-    this.onPasteImage = () => {
-      void this.handlePasteClipboardImage();
-    };
+    // Leave `onPasteImage` unset so pi installs its own handler, which pastes
+    // file paths, then images, then plain text. The image path of that handler
+    // would leave a temporary file behind, so the paste key is handled here
+    // first and pi's handler runs only when the clipboard holds no image.
   }
 
   override insertTextAtCursor(text: string): void {
@@ -149,6 +150,10 @@ export class PasterEditor extends CustomEditor {
     if (this.handleAtomicPlaceholderNavigation(data)) return;
     if (this.pasterOptions.deletePlaceholderAsBlock && this.handleAtomicPlaceholderDelete(data))
       return;
+    if (this.pasterKeybindings.matches(data, "app.clipboard.pasteImage")) {
+      void this.handlePasteClipboardImage();
+      return;
+    }
 
     super.handleInput(data);
     this.updateCursorPreview();
@@ -172,7 +177,10 @@ export class PasterEditor extends CustomEditor {
 
   private async handlePasteClipboardImage(): Promise<void> {
     const attachment = await this.pasterOptions.pasteClipboardImage?.();
-    if (!attachment) return;
+    if (!attachment) {
+      this.onPasteImage?.();
+      return;
+    }
     super.insertTextAtCursor(attachment.placeholder);
     this.updateCursorPreview();
     this.tui.requestRender();
