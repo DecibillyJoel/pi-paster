@@ -34,7 +34,7 @@ Terminal image workflows are awkward: dragging a screenshot into a terminal usua
 - Optional custom editor integration:
   - cursor-based image preview above the input
   - atomic deletion of whole image placeholders
-  - macOS clipboard image paste via pi's image paste keybinding
+  - macOS and Linux clipboard image paste via pi's image paste keybinding
 
 ## Installation
 
@@ -101,6 +101,8 @@ No extra runtime dependencies are used; the command shells out to the installed 
 On macOS, pi exposes an image paste action through its keybinding system. In the default pi keybindings this is `Ctrl+V`.
 
 `Cmd+V` is handled by the terminal emulator itself. In Ghostty, if the clipboard contains text, Ghostty pastes the text into pi; if the clipboard contains only image data, pi may receive no input. Use pi's image paste keybinding for direct clipboard-image paste.
+
+On Linux, the same `Ctrl+V` keybinding reads the image from the desktop clipboard. The reader uses `wl-paste` from `wl-clipboard` on a Wayland session, and `xclip` on an X11 session. Install at least one of the two tools. The reader tries `wl-paste` first, then `xclip`, and it prefers a PNG, JPEG, WebP, or GIF target. If neither tool is installed, paster reports that the clipboard image could not be attached. Under WSL, paster uses the Windows clipboard instead.
 
 ## Configuration
 
