@@ -11,6 +11,10 @@ interface MessagePart {
   text?: string;
 }
 
+// Cheap pre-check on the hot path. AttachmentStore builds `[#image N]`
+// placeholders, so text without this prefix cannot hold one.
+const PLACEHOLDER_HINT = "[#image";
+
 function textOfContent(content: unknown): string | undefined {
   if (typeof content === "string") return content;
   if (!Array.isArray(content)) return undefined;
@@ -34,6 +38,7 @@ async function repairMessage<T extends RepairableMessage>(
   if (message.role !== "user") return undefined;
   const text = textOfContent(message.content);
   if (text === undefined) return undefined;
+  if (!text.includes(PLACEHOLDER_HINT)) return undefined;
   if (hasImagePart(message.content)) return undefined;
   if (store.matchingPlaceholders(text).length === 0) return undefined;
   const images = await imagesForTextOptimized(store, text, []);
