@@ -35,7 +35,6 @@
     "dev": "vp pack --watch",
     "test": "vp test",
     "check": "vp check",
-    "prepare": "vp config",
     "prepublishOnly": "node scripts/check-npm-auth.mjs && vp run build"
   },
   "devDependencies": {
@@ -44,7 +43,7 @@
     "@types/node": "^25.8.0",
     "@typescript/native-preview": "7.0.0-dev.20260515.1",
     "typescript": "^6.0.3",
-    "vite-plus": "catalog:"
+    "vite-plus": "0.1.21"
   },
   "peerDependencies": {
     "@earendil-works/pi-coding-agent": "*",
