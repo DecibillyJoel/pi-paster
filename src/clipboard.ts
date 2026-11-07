@@ -4,7 +4,7 @@ import { existsSync, readFileSync, unlinkSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { detectImageMimeType, dimensionsForImage } from "./image-utils.ts";
-import { MAX_IMAGE_BYTES, type LoadedImage } from "./types.ts";
+import { MAX_IMAGE_BYTES, type LoadedImage, type SupportedImageMimeType } from "./types.ts";
 
 export type ClipboardImageResult =
   | { ok: true; image: LoadedImage }
@@ -157,12 +157,12 @@ function readMacOSClipboardImage(maxBytes: number): ClipboardImageResult {
 
 // Linux clipboard support. The backend order matches the one pi itself uses:
 // Wayland first (wl-paste), then X11 (xclip). The first backend that answers
-// owns the clipboard, so an empty Wayland clipboard never falls through to
-// stale X11 contents.
+// owns the clipboard, so an empty or failed Wayland clipboard never falls
+// through to stale X11 contents.
 
 const LINUX_IMAGE_MIME_TYPES = ["image/png", "image/jpeg", "image/webp", "image/gif"];
 
-const IMAGE_EXTENSION_BY_MIME: Record<string, string> = {
+const IMAGE_EXTENSION_BY_MIME: Record<SupportedImageMimeType, string> = {
   "image/png": "png",
   "image/jpeg": "jpg",
   "image/webp": "webp",
@@ -191,8 +191,8 @@ const LINUX_CLIPBOARD_BACKENDS: LinuxClipboardBackend[] = [
   },
 ];
 
-function baseMimeType(type: string): string {
-  return type.split(";")[0]?.trim().toLowerCase() ?? type.toLowerCase();
+export function baseMimeType(type: string): string {
+  return type.split(";")[0]!.trim().toLowerCase();
 }
 
 /**
@@ -218,7 +218,7 @@ function listClipboardTypes(command: string, args: string[]): string[] | null {
   }
 }
 
-function selectPreferredImageType(types: string[]): string | null {
+export function selectPreferredImageType(types: string[]): string | null {
   const normalized = types.map((type) => ({ raw: type, base: baseMimeType(type) }));
   for (const preferred of LINUX_IMAGE_MIME_TYPES) {
     const match = normalized.find((type) => type.base === preferred);
@@ -260,7 +260,7 @@ function readClipboardType(
     return {
       kind: "image",
       image: {
-        originalPath: `clipboard.${IMAGE_EXTENSION_BY_MIME[mimeType] ?? "png"}`,
+        originalPath: `clipboard.${IMAGE_EXTENSION_BY_MIME[mimeType]}`,
         mimeType,
         data,
         dimensions: dimensionsForImage(data, mimeType),
@@ -286,7 +286,9 @@ function readLinuxClipboardImage(maxBytes: number): ClipboardImageResult {
 
     const outcome = readClipboardType(backend.command, backend.readArgs(type), maxBytes);
     if (outcome.kind === "image") return { ok: true, image: outcome.image };
-    if (outcome.kind === "unavailable") continue;
+    // The backend answered the type list, so it owns the clipboard. A failed
+    // read must not fall through to a stale image in the next backend.
+    if (outcome.kind === "unavailable") return { ok: false, reason: "read-error" };
     return { ok: false, reason: outcome.kind };
   }
 
