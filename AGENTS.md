@@ -49,7 +49,7 @@ Target behavior:
 - `src/image-utils.ts` — image path parsing, MIME detection, image loading, and image-content generation.
 - `src/preview.ts` — submitted-image and cursor-preview render components.
 - `src/store.ts` — in-memory attachment store and placeholder allocation.
-- `src/clipboard.ts` — macOS clipboard image reader.
+- `src/clipboard.ts` — clipboard image reader for macOS, Windows (WSL), and Linux.
 - `src/terminal-input.ts` — fallback terminal input handler used when the custom editor is disabled.
 - `tests/` — Vitest tests run through Vite+.
 - `package.json` — package metadata, npm publishing metadata, peer dependencies, and `pi.extensions` manifest.
@@ -160,7 +160,7 @@ NPM may require browser/OTP authentication.
   - deleting a placeholder prevents attachment
   - pi keybindings still work
   - cursor preview appears only when the cursor is inside the placeholder
-  - clipboard image paste works via pi's image paste keybinding on macOS
+  - clipboard image paste works via pi's image paste keybinding on macOS, Windows (WSL), and Linux
 
 Before handing off changes, run:
 
