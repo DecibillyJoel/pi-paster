@@ -172,7 +172,9 @@ export default function paster(pi: ExtensionAPI, config: PasterConfig = {}): voi
     } else {
       // Queued steer/follow-up messages do not fire before_agent_start when they are
       // later delivered by the running agent, so enqueue the preview alongside them now.
-      pi.sendMessage(previewMessage(attachments), { deliverAs: "followUp" });
+      // triggerTurn false appends the preview without a model call: the note is a
+      // rendering detail, not a prompt for the model.
+      pi.sendMessage(previewMessage(attachments), { deliverAs: "followUp", triggerTurn: false });
     }
 
     // Optimize images on-submit so we never exceed Anthropic's 5 MB/image or

@@ -17,21 +17,26 @@ type Handler = (event: unknown, ctx: unknown) => unknown;
 
 interface FakePi {
   handlers: Map<string, Handler>;
+  sent: Array<{ message: unknown; options: unknown }>;
 }
 
 type ContextResult = { messages?: Array<{ role?: string; content?: unknown }> } | undefined;
 
 function makePi(): FakePi & ExtensionAPI {
   const handlers = new Map<string, Handler>();
+  const sent: Array<{ message: unknown; options: unknown }> = [];
   const pi = {
     handlers,
+    sent,
     on(event: string, handler: Handler) {
       handlers.set(event, handler);
       return () => {};
     },
     registerMessageRenderer() {},
     registerCommand() {},
-    sendMessage() {},
+    sendMessage(message: unknown, options?: unknown) {
+      sent.push({ message, options });
+    },
   };
   return pi as unknown as FakePi & ExtensionAPI;
 }
@@ -49,10 +54,11 @@ describe("paster context hook", () => {
   let ctx: ExtensionContext;
   let captured: ((data: string) => unknown) | undefined;
 
-  function makeCtx(cwd: string): ExtensionContext {
+  function makeCtx(cwd: string, { idle = false }: { idle?: boolean } = {}): ExtensionContext {
     return {
       hasUI: true,
       cwd,
+      isIdle: () => idle,
       ui: {
         onTerminalInput: (handler: (data: string) => unknown) => {
           captured = handler;
@@ -119,5 +125,38 @@ describe("paster context hook", () => {
     const event = { type: "context", messages: [withImage] };
 
     expect(await contextHandler(pi)(event, ctx)).toBeUndefined();
+  });
+
+  test("queues the preview of a busy submission without waking the model", async () => {
+    const inputHandler = pi.handlers.get("input");
+    if (!inputHandler) throw new Error("input handler is not registered");
+
+    await inputHandler(
+      { type: "input", source: "user", text: "[#image 1]", images: [] },
+      makeCtx(dir),
+    );
+
+    expect(pi.sent).toHaveLength(1);
+    expect(pi.sent[0]?.message).toMatchObject({
+      customType: "paster-preview",
+      content: "(attachment preview: [#image 1])",
+    });
+    expect(pi.sent[0]?.options).toEqual({ deliverAs: "followUp", triggerTurn: false });
+  });
+
+  test("returns the preview from before_agent_start while the agent is idle", async () => {
+    const inputHandler = pi.handlers.get("input");
+    const startHandler = pi.handlers.get("before_agent_start");
+    if (!inputHandler || !startHandler) throw new Error("handlers are not registered");
+
+    await inputHandler(
+      { type: "input", source: "user", text: "[#image 1]", images: [] },
+      makeCtx(dir, { idle: true }),
+    );
+
+    expect(pi.sent).toHaveLength(0);
+    expect(await startHandler({ type: "before_agent_start" }, makeCtx(dir))).toMatchObject({
+      message: { customType: "paster-preview", content: "(attachment preview: [#image 1])" },
+    });
   });
 });
