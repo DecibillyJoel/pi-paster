@@ -2,13 +2,13 @@ name: Sync from upstream
 
 on:
   schedule:
-    - cron: '17 7 * * *'
+    - cron: "17 7 * * *"
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Upstream release tag to merge (blank = latest release)'
+        description: "Upstream release tag to merge (blank = latest release)"
         required: false
-        default: ''
+        default: ""
 
 permissions:
   contents: write
