@@ -1,0 +1,12 @@
+{
+  "upstream": "beowulf11/pi-paster",
+  "tagFormat": "v{version}",
+  "versionFields": [{ "path": "package.json", "field": "version" }],
+  "lockfile": "pnpm-lock.yaml",
+  "install": "pnpm install --frozen-lockfile",
+  "test": "pnpm exec vp test run",
+  "build": "pnpm run build",
+  "pack": "npm pack",
+  "assets": [],
+  "nodeVersion": "22"
+}
